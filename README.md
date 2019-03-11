@@ -4,4 +4,7 @@
 ## 功能介绍
 **查课表**：可以查看当前学期的课程表
 ## 项目结构
-## 团队成员
+![项目结构图](https://github.com/YahuiAn/BJUTservice/raw/master/images/BJUTservice%E7%BB%93%E6%9E%84%E5%9B%BE.png)
+- **反向代理**：陈佳卫，亓冠强
+- **数据解析**：陈佳卫，安亚辉
+- **小程序**：陈玉林，崔紫玉，秦燕，路致平
