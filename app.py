@@ -15,21 +15,20 @@ checkCodeUrl = "http://188.131.128.233/CheckCode.aspx"
 app = Flask(__name__) # 实例化一个程序
 
 
-# 客户端第一次发送请求，我们返回验证码和cookieID
+# 客户端第一次发送请求，我们返回验证码和cookieID,验证码命名规则就是cookieID.jpg
 @app.route('/get')
 def getCode():
     s = requests.Session()
     response = s.get(checkCodeUrl)
     image = response.content
     DstDir = os.getcwd()+"/static/"
-    timenow = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    codeName = list(s.cookies)[0].value
     try:
-        with open(DstDir + timenow + "code.jpg", "wb") as jpg:
+        with open(DstDir + codeName + ".jpg", "wb") as jpg:
             jpg.write(image)
     except IOError:
         print("IO Error\n")
-    codeName = timenow + "code.jpg"
-    temp = {"sessionID":list(s.cookies)[0].value,"codeName":codeName}
+    temp = {"sessionID":list(s.cookies)[0].value}
     return jsonify(temp)
 
 # 以查询字符串的形式发送get请求，
@@ -124,7 +123,6 @@ def login():
                             dataList.append(tempDir)
                             j = j+1
         return jsonify(dataList)
-
 
 # 服务器开始运行
 if __name__ == '__main__':
