@@ -5,7 +5,7 @@ import urllib
 import datetime
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, render_template, request,jsonify
+from flask import Flask, request,jsonify,make_response
 from lxml import etree
 
 # 初始化相关参数
@@ -15,7 +15,7 @@ checkCodeUrl = "http://188.131.128.233/CheckCode.aspx"
 app = Flask(__name__) # 实例化一个程序
 
 
-# 客户端第一次发送请求，我们返回验证码和cookieID,验证码命名规则就是cookieID.jpg
+# 客户端第一次发送请求，我们返回验证码和sessionID,验证码命名规则就是sessionID.jpg
 @app.route('/get')
 def getCode():
     s = requests.Session()
@@ -76,7 +76,9 @@ def login():
     try:
         studentName = html.xpath('//*[@id="xhxm"]/text()')[0][0:3]
     except IndexError:
-        return "请检查学号，密码，验证码是否正确"
+        resp=make_response('请检查学号，密码，验证码是否正确') #自定义响应体
+        resp.status='400' # 自定义响应状态码
+        return resp
     else:
         # 获取课表
         urlStudentName = urllib.parse.quote(str(studentName.encode('gb2312')))
@@ -103,6 +105,8 @@ def login():
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html,"lxml")
         dataList = []
+        sNameDir={'stuName':studentName}
+        dataList.append(sNameDir)
         tempDir = {}
         trs = soup.find(id='Table1').find_all('tr')
         for tr in trs:

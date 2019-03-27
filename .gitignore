@@ -105,3 +105,6 @@ venv.bak/
 
 # vscode配置文件
 .vscode/
+
+# static存放验证码的目录
+/static
