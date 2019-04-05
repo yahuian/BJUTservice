@@ -12,11 +12,11 @@ from lxml import etree
 default2Url = "http://188.131.128.233/default2.aspx"
 checkCodeUrl = "http://188.131.128.233/CheckCode.aspx"
 
-app = Flask(__name__) # 实例化一个程序
+application = Flask(__name__) # 实例化一个程序
 
 
 # 客户端第一次发送请求，我们返回验证码和sessionID,验证码命名规则就是sessionID.jpg
-@app.route('/get')
+@application.route('/get')
 def getCode():
     s = requests.Session()
     response = s.get(checkCodeUrl)
@@ -34,7 +34,7 @@ def getCode():
 # 以查询字符串的形式发送get请求，
 # 例如：http://127.0.0.1:5000/?xh=16010328&mm=12%26%3d%2f23%23&yzm=1234&id=axvebh55qcaz0b55sozmqt55
 # 注意此处必须采用url编码
-@app.route('/')
+@application.route('/')
 def login():
     studentNumber = request.args.get("xh")
     password = request.args.get("mm")
@@ -130,4 +130,4 @@ def login():
 
 # 服务器开始运行
 if __name__ == '__main__':
-    app.run()
+    application.run()
