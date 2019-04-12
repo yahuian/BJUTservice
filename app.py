@@ -74,7 +74,7 @@ def login():
     content = response.content.decode('gb2312') # 网页源码是gb2312要先解码
     html = etree.HTML(content)
     try:
-        studentName = html.xpath('//*[@id="xhxm"]/text()')[0][0:3]
+        studentName = html.xpath('//*[@id="xhxm"]/text()')[0][0:-2]
     except IndexError:
         resp=make_response('请检查学号，密码，验证码是否正确') #自定义响应体
         resp.status='400' # 自定义响应状态码
