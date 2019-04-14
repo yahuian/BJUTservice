@@ -13,6 +13,7 @@ class BJUTjiaowu:
 
     __studentNumber=''    # 学号
     __password=''         # 密码
+    __checkCode=''        # 验证码
 
     __studentName=''      # 姓名
     __college=''          # 学院
@@ -45,6 +46,7 @@ class BJUTjiaowu:
         '登录教务管理系统'
         self.__studentNumber=studentNumber
         self.__password=password
+        self.__checkCode=checkCode
 
         # 确保用户身份不变
         mycookie = {"ASP.NET_SessionId": self.__sessionID}
