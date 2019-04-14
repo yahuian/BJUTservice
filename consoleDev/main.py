@@ -1,12 +1,36 @@
 from BJUT import BJUTjiaowu
 
-bjut=BJUTjiaowu()
+# 实例化一个对象
+bjut=BJUTjiaowu()  
 
-sessionID=bjut.getCheckCode() # 获取验证码
+# 有验证码登录
+'''
+# 获取验证码
+sessionID=bjut.getCheckCode()  
 print(sessionID)
-print('请输入验证码：')
+
+# 输入验证码
+print('请输入验证码：')         
 checkCode=input()
-#tryLogin=bjut.login('16010328','281205ayh23/',checkCode) # 登录教务管理
-tryLogin=bjut.login('17167111','zxc31263600.',checkCode)
+
+# 登录教务管理
+tryLogin=bjut.login('16010328','281205ayh23',checkCode)
 print(tryLogin)
-bjut.getSchedule() # 获取课程表
+'''
+# 无验证码登录
+tryLogin=bjut.loginNoCheckcode('16010328','281205ayh23')
+print(tryLogin)
+
+# 获取学生基本信息
+info=bjut.getBaseInfo()
+print('基本信息：') 
+print(info)
+
+# 获取课程表
+schedule=bjut.getSchedule()
+print('课程表：')
+for s in schedule['table']:
+    print(s)
+print('实践课：')
+for e in schedule['exercise']:
+    print(e)
