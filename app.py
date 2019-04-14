@@ -1,3 +1,6 @@
+'''
+该版本为有验证码的版本
+'''
 import json
 import os
 import re
