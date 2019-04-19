@@ -108,3 +108,6 @@ venv.bak/
 
 # static存放验证码的目录
 /static
+
+# SQLite3文件数据库
+*.db

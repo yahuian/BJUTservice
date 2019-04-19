@@ -142,7 +142,7 @@ class BJUTjiaowu:
         spans=soup.find(class_='trbg1').find_all('span')
         self.__college=spans[2].get_text()[3:]
         self.__major=spans[3].get_text()[3:]
-        self.__class=spans[4].get_text()[3:]
+        self.__class=spans[4].get_text()[4:]
         baseInfo={
             'studentNumber':self.__studentNumber, # 学号
             'studentName':self.__studentName,     # 姓名
