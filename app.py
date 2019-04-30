@@ -1,136 +1,136 @@
 '''
-该版本为有验证码的版本
+该版本为无验证码版
 '''
-import json
 import os
-import re
-import urllib
-import datetime
-import requests
-from bs4 import BeautifulSoup
-from flask import Flask, request,jsonify,make_response
-from lxml import etree
-
-# 初始化相关参数
-default2Url = "http://188.131.128.233/default2.aspx"
-checkCodeUrl = "http://188.131.128.233/CheckCode.aspx"
+import sqlite3
+from BJUT import BJUTjiaowu
+from flask import Flask, request,jsonify,make_response,g
 
 application = Flask(__name__) # 实例化一个程序
 
+# 数据库文件的路径
+DstDir = os.getcwd()
+DATABASE_URI = DstDir+"/freeRoom.db"
 
-# 客户端第一次发送请求，我们返回验证码和sessionID,验证码命名规则就是sessionID.jpg
-@application.route('/get')
-def getCode():
-    s = requests.Session()
-    response = s.get(checkCodeUrl)
-    image = response.content
-    DstDir = os.getcwd()+"/static/"
-    codeName = list(s.cookies)[0].value
-    try:
-        with open(DstDir + codeName + ".jpg", "wb") as jpg:
-            jpg.write(image)
-    except IOError:
-        print("IO Error\n")
-    temp = {"sessionID":list(s.cookies)[0].value}
-    return jsonify(temp)
+# 连接数据库
+@application.before_request
+def before_request():
+    g.db = sqlite3.connect(DATABASE_URI)
 
-# 以查询字符串的形式发送get请求，
-# 例如：http://127.0.0.1:5000/?xh=16010328&mm=12%26%3d%2f23%23&yzm=1234&id=axvebh55qcaz0b55sozmqt55
-# 注意此处必须采用url编码
+# 关闭数据库
+@application.teardown_request
+def teardown_request(exception):
+    if hasattr(g, 'db'):
+        g.db.close()
+
+# 主页
 @application.route('/')
-def login():
+def index():
+    return "<h1 style='color:blue'>智慧北工大</h1>"
+
+# 查课表信息
+# http://127.0.0.1:5000/schedule?xh=16010328&mm=281205ayh23
+@application.route('/schedule')
+def schedule():
     studentNumber = request.args.get("xh")
     password = request.args.get("mm")
-    checkCode = request.args.get("yzm")
-    cookieID = request.args.get("id")
 
-    # 确保用户身份和第一次是一样的
-    mycookie = {"ASP.NET_SessionId": cookieID}
-    s = requests.Session()
-    requests.utils.add_dict_to_cookiejar(s.cookies, mycookie)
-
-    # 使用xpath获取__VIEWSTATE
-    response = s.get(default2Url)
-    html = etree.HTML(response.content)
-    viewState = html.xpath('//*[@id="form1"]/input/@value')[0]
-
-    # 构建post数据，并登陆教务系统
-    RadioButtonList1 = u"学生".encode('gb2312', 'replace')
-    data = {
-        "__VIEWSTATE": viewState,
-        "txtUserName": studentNumber,
-        "TextBox2": password,
-        "txtSecretCode": checkCode,
-        "RadioButtonList1": RadioButtonList1,
-        "Button1": "",
-        "lbLanguage": "",
-        "hidPdrs": "",
-        "hidsc": ""
-        }
-    headers = {
-        "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/7",
-        }
-    response = s.post(default2Url,data,headers)
-    
-    # 从主页获取学生的姓名
-    content = response.content.decode('gb2312') # 网页源码是gb2312要先解码
-    html = etree.HTML(content)
-    try:
-        studentName = html.xpath('//*[@id="xhxm"]/text()')[0][0:-2]
-    except IndexError:
-        resp=make_response('请检查学号，密码，验证码是否正确') #自定义响应体
+    bjut=BJUTjiaowu()
+    isLogin=bjut.loginNoCheckcode(studentNumber,password) # 登录
+    if isLogin==True:
+        '登录成功'
+        baseInfo=bjut.getBaseInfo() # 基本信息
+        table=bjut.getSchedule()    # 课表
+        temp=[baseInfo,table]
+        return jsonify(temp)
+    else:
+        resp=make_response('请检查学号，密码是否正确') #自定义响应体
         resp.status='400' # 自定义响应状态码
         return resp
+
+
+# 查空教室信息
+# http://127.0.0.1:5000/freeroom?building=1&week=%e4%b8%80&currentweek=8&time1=1&time2=2
+@application.route("/freeroom")
+def freeroom():
+    '查询空教室信息'
+    # 可以上自习的教室，手动统计，可能有误差
+    classroom1=['201','203','204','205','206','209','210','211','212','214',
+                '216','218','223','224','225','227','228','229','230','232',
+                '234','301','303','304','305','306','309','310','311','312',
+                '314','316','318','323','324','325','326','327','328','329',
+                '330','332','334','401','403','404','405','406','409','410',
+                '411','412','414','416','418','421','422','423','424','425',
+                '426','427','428','431','433','503','504','505','508','509',
+                '510','514','515','516','517','518','519','520','521']
+
+    classroom3=['101','102','104','105','108','109','111','115','116','201',
+                '202','203','204','205','206','207','208','209','210','301',
+                '302','307','312','313','314','317','318','319','320','321',
+                '322','323','324','325','326','401','402','407','412','413',
+                '414','415','416','417','418','419','420','421','422','423',
+                '424','425','426','427','428','429','501','506','511','516',
+                '525','526','527','528','529','530','531','532','533','534',
+                '535']
+
+    classroom4=['201','214-215','216-217','218-219','220-221','303-304','305-306',
+                '316-317','307-308','309-310','312-313','314-315','401-402',
+                '404-405','406-407','408-409','410-411','413-414','415-416',
+                '417-418','419-420','503-504','505-506','507-508','509-510',
+                '512-513','514-515','516-517']
+
+    building = 'classroom'+request.args.get('building') # 教学楼
+    week ='"星期'+request.args.get('week')+'"'          # 星期
+    currentweek=request.args.get('currentweek')         # 当前周 
+
+    time1=str(request.args.get('time1'))
+    time2=str(request.args.get('time2'))
+    times=[]
+    if time1=='1' and time2=='4':
+        times=['"第1,2节"','"第3,4节"'] # 上午
+    elif time1=='5' and time2=='8':
+        times=['"第5,6节"','"第7,8节"'] # 下午
+    elif time1=='9' and time2=='12':
+        times=['"第9,10节"','"第11,12节"'] # 晚上
     else:
-        # 获取课表
-        urlStudentName = urllib.parse.quote(str(studentName.encode('gb2312')))
-        scheduleBaseUrl = "http://188.131.128.233/xskbcx.aspx?xh="+studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121603"
-        headers = {
-            "Referer": "http://188.131.128.233/xs_main.aspx?xh="+studentNumber,
-            "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
-        }
-        response = s.get(url=scheduleBaseUrl, headers=headers)
-        html = etree.HTML(response.content)
-        viewState = html.xpath('//*[@id="xskb_form"]/input/@value')[2]
-        xnd = "2018-2019" # 设置学年
-        xqd = "2" # 设置学期
-        data = {
-            "__EVENTTARGET": xqd,
-            "__EVENTARGUMENT": "",
-            "__VIEWSTATE":viewState,
-            "xnd": xnd,
-            "xqd": xqd
-        }
-        response = s.get(url= scheduleBaseUrl, data=data, headers=headers) # 默认页面用get方式，若涉及选择学期则用post方式
-        html = response.content.decode("gbk")
-        soup = BeautifulSoup(html,"lxml")
-        dataList = []
-        sNameDir={'stuName':studentName}
-        dataList.append(sNameDir)
-        tempDir = {}
-        trs = soup.find(id='Table1').find_all('tr')
-        for tr in trs:
-            for td in tr.find_all('td'):
-                if td.string==None:
-                    res = td.find_all(text=True)
-                    i = 1
-                    j = 0
-                    while i<len(res):
-                        i = i+1
-                        if i%4==0:
-                            tempDir = {
-                                'Name': res[4*j],                        # 课程名称
-                                'Time': re.sub('[{}]', '', res[4*j+1]),  # 上课时间
-                                'Teacher': res[4*j+2],                   # 授课老师 
-                                'Location': res[4*j+3]                   # 上课地点
-                            }    
-                            dataList.append(tempDir)
-                            j = j+1
-        return jsonify(dataList)
+        times=['"第'+time1+','+time2+'节"','""']
+    
+    timeValue='('+times[0]+','+times[1]+')'
+
+    if (week=='"星期六"' or week=='"星期日"') and building=='classroom1':
+        return jsonify(['正常情况，一教周末只有二三层小教室开放，节假日除外'])
+    elif (week=='"星期六"' or week=='"星期日"') and building=='classroom4':
+        return jsonify(['正常情况，四教周末3，4，5层开放，节假日除外'])
+    else:   # 写这样的SQL真是难受死了
+        rooms=g.db.execute('select room FROM '+building+' \
+            WHERE week='+week+' \
+                AND '+currentweek+' BETWEEN week1 AND week2 \
+                    AND time in '+timeValue)
+
+        tempList=[]
+        temp=[]
+
+        for r in rooms:
+            tempstr="".join(tuple(r))
+            tempList.append(tempstr[-3:])
+            temp=list(set(tempList)) # 去重复元素
+            temp.sort() # 排序
+        
+        if building=='classroom1':
+            room=list(set(classroom1).difference(set(temp))) # 可以自习的教室-有课的教室=空闲教室
+            room.sort()
+            return jsonify(room)
+        elif building=='classroom3':
+            room=list(set(classroom3).difference(set(temp)))
+            room.sort()
+            return jsonify(room)
+        else:
+            for t in temp:
+                for c in classroom4:
+                    if t in c:
+                        classroom4.remove(c)
+            return jsonify(classroom4)
 
 # 服务器开始运行
 if __name__ == '__main__':
-    application.run()
+    application.run('0.0.0.0')
