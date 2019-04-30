@@ -59,7 +59,7 @@ class BJUTjiaowu:
         viewState = html.xpath('//*[@id="form1"]/input/@value')[0]
 
         # 构建post数据，并登陆教务系统
-        RadioButtonList1 = u"学生".encode('gb2312', 'replace')
+        RadioButtonList1 = u"学生".encode('gbk', 'replace')
         data = {
             "__VIEWSTATE": viewState,
             "txtUserName": studentNumber,
@@ -78,7 +78,7 @@ class BJUTjiaowu:
         response = s.post(self.__default2Url,data,headers)
     
         # 从主页获取学生的姓名
-        content = response.content.decode('gb2312') # 网页源码是gb2312要先解码
+        content = response.content.decode('gbk') # 网页源码是gb2312要先解码,有同学名字超出gb2312编码,所以换成范围更大的gbk
         html = etree.HTML(content)
         try:
             studentName = html.xpath('//*[@id="xhxm"]/text()')[0][0:-2]
@@ -110,7 +110,7 @@ class BJUTjiaowu:
         response = s.post(url,data,headers)
 
         # 从主页获取学生的姓名
-        content = response.content.decode('gb2312') # 网页源码是gb2312要先解码
+        content = response.content.decode('gbk') # 网页源码是gb2312要先解码
         html = etree.HTML(content)
         try:
             studentName = html.xpath('//*[@id="xhxm"]/text()')[0][0:-2]
@@ -128,7 +128,7 @@ class BJUTjiaowu:
         requests.utils.add_dict_to_cookiejar(s.cookies, mycookie)
 
         # 获取学生基本信息
-        urlStudentName = urllib.parse.quote(str(self.__studentName.encode('gb2312')))
+        urlStudentName = urllib.parse.quote(str(self.__studentName.encode('gbk')))
         scheduleBaseUrl = "http://188.131.128.233/xskbcx.aspx?xh="+self.__studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121603"
         headers = {
             "Referer": "http://188.131.128.233/xs_main.aspx?xh="+self.__studentNumber,
@@ -160,7 +160,7 @@ class BJUTjiaowu:
         requests.utils.add_dict_to_cookiejar(s.cookies, mycookie)
 
         # 获取课表
-        urlStudentName = urllib.parse.quote(str(self.__studentName.encode('gb2312')))
+        urlStudentName = urllib.parse.quote(str(self.__studentName.encode('gbk')))
         scheduleBaseUrl = "http://188.131.128.233/xskbcx.aspx?xh="+self.__studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121603"
         headers = {
             "Referer": "http://188.131.128.233/xs_main.aspx?xh="+self.__studentNumber,

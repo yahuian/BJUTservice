@@ -4,10 +4,11 @@ import os
 import sqlite3
 from openpyxl import load_workbook
 
-fileName='classroom4' # excel文档的名字
+fileName='classroom4' # 输入excel文档的名字
 
+#--------------------------------------------------------------------------------------------------
 # 从excel表中读数据
-DstDir = os.getcwd()+'/'+fileName+'.xlsx' # excel表格的路径及名称，注意只能打开.xlsx类型的
+DstDir = os.getcwd()+'/tools/'+fileName+'.xlsx' # excel表格的路径及名称，注意只能打开.xlsx类型的
 wb=load_workbook(DstDir) # 实例化一个workbook对象，类似于一个excel文件
 sheet=wb.active # 打开默认的sheet
 
@@ -31,9 +32,9 @@ DATABASE_URI = DstDir+"/freeRoom.db" # 数据库文件的路径和名称
 conn = sqlite3.connect(DATABASE_URI) # 连接
 c = conn.cursor()
 # 创建表
-c.execute('CREATE TABLE '+fileName+' (week TEXT,time TEXT,begin INTEGER,end INTEGER,room TEXT)')
+c.execute('CREATE TABLE '+fileName+' (week TEXT,time TEXT,week1 INTEGER,week2 INTEGER,room TEXT)')
 # 插入数据
-c.executemany('INSERT INTO '+fileName+' (week,time,begin,end,room) VALUES (?,?,?,?,?)', templist) 
+c.executemany('INSERT INTO '+fileName+' (week,time,week1,week2,room) VALUES (?,?,?,?,?)', templist) 
 conn.commit() # 提交
 print('成功写入数据库')
 conn.close() # 关闭

@@ -23,7 +23,6 @@ def teardown_request(exception):
     if hasattr(g, 'db'):
         g.db.close()
 
-
 # 主页
 @application.route('/')
 def index():
@@ -55,30 +54,83 @@ def schedule():
 @application.route("/freeroom")
 def freeroom():
     '查询空教室信息'
+    # 可以上自习的教室，手动统计，可能有误差
+    classroom1=['201','203','204','205','206','209','210','211','212','214',
+                '216','218','223','224','225','227','228','229','230','232',
+                '234','301','303','304','305','306','309','310','311','312',
+                '314','316','318','323','324','325','326','327','328','329',
+                '330','332','334','401','403','404','405','406','409','410',
+                '411','412','414','416','418','421','422','423','424','425',
+                '426','427','428','431','433','503','504','505','508','509',
+                '510','514','515','516','517','518','519','520','521']
+
+    classroom3=['101','102','104','105','108','109','111','115','116','201',
+                '202','203','204','205','206','207','208','209','210','301',
+                '302','307','312','313','314','317','318','319','320','321',
+                '322','323','324','325','326','401','402','407','412','413',
+                '414','415','416','417','418','419','420','421','422','423',
+                '424','425','426','427','428','429','501','506','511','516',
+                '525','526','527','528','529','530','531','532','533','534',
+                '535']
+
+    classroom4=['201','214-215','216-217','218-219','220-221','303-304','305-306',
+                '316-317','307-308','309-310','312-313','314-315','401-402',
+                '404-405','406-407','408-409','410-411','413-414','415-416',
+                '417-418','419-420','503-504','505-506','507-508','509-510',
+                '512-513','514-515','516-517']
+
     building = 'classroom'+request.args.get('building') # 教学楼
     week ='"星期'+request.args.get('week')+'"'          # 星期
     currentweek=request.args.get('currentweek')         # 当前周 
 
     time1=str(request.args.get('time1'))
     time2=str(request.args.get('time2'))
-    time='"*'+time1+','+time2+'*"'
-
-    tempList=[]
+    times=[]
+    if time1=='1' and time2=='4':
+        times=['"第1,2节"','"第3,4节"'] # 上午
+    elif time1=='5' and time2=='8':
+        times=['"第5,6节"','"第7,8节"'] # 下午
+    elif time1=='9' and time2=='12':
+        times=['"第9,10节"','"第11,12节"'] # 晚上
+    else:
+        times=['"第'+time1+','+time2+'节"','""']
     
-    rooms=g.db.execute('SELECT room FROM '+building+'\
-         WHERE week='+week+'\
-         AND '+building+'.begin'+'<='+currentweek+'\
-         AND '+building+'.end'+'>='+currentweek+'\
-         AND time GLOB'+time)
+    timeValue='('+times[0]+','+times[1]+')'
 
-    for r in rooms:
-        tempstr="".join(tuple(r))
-        tempList.append(tempstr[2:])
-        temp=list(set(tempList)) # 去重复元素
-        temp.sort() # 排序
-    return jsonify(temp)
+    if (week=='"星期六"' or week=='"星期日"') and building=='classroom1':
+        return jsonify(['正常情况，一教周末只有二三层小教室开放，节假日除外'])
+    elif (week=='"星期六"' or week=='"星期日"') and building=='classroom4':
+        return jsonify(['正常情况，四教周末3，4，5层开放，节假日除外'])
+    else:   # 写这样的SQL真是难受死了
+        rooms=g.db.execute('select room FROM '+building+' \
+            WHERE week='+week+' \
+                AND '+currentweek+' BETWEEN week1 AND week2 \
+                    AND time in '+timeValue)
 
+        tempList=[]
+        temp=[]
+
+        for r in rooms:
+            tempstr="".join(tuple(r))
+            tempList.append(tempstr[-3:])
+            temp=list(set(tempList)) # 去重复元素
+            temp.sort() # 排序
+        
+        if building=='classroom1':
+            room=list(set(classroom1).difference(set(temp))) # 可以自习的教室-有课的教室=空闲教室
+            room.sort()
+            return jsonify(room)
+        elif building=='classroom3':
+            room=list(set(classroom3).difference(set(temp)))
+            room.sort()
+            return jsonify(room)
+        else:
+            for t in temp:
+                for c in classroom4:
+                    if t in c:
+                        classroom4.remove(c)
+            return jsonify(classroom4)
 
 # 服务器开始运行
 if __name__ == '__main__':
-    application.run('0,0,0,0')
+    application.run('0.0.0.0')
