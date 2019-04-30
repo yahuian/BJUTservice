@@ -5,6 +5,10 @@
 **查课表**：可以查看当前学期的课程表
 
 **空教室**：可以查看空教室（一教，三教，四教）
+
+**考试信息**：可以查看考试安排信息
+
+**等级考试**：可以查看等级考试的情况
 ## 项目结构
 ![项目结构图](https://github.com/YahuiAn/BJUTservice/raw/master/images/BJUTservice%E7%BB%93%E6%9E%84%E5%9B%BE.png)
 - **反向代理**：CQ，亓冠强
