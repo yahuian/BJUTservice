@@ -48,6 +48,41 @@ def schedule():
         resp.status='400' # 自定义响应状态码
         return resp
 
+# 考试信息查询
+# http://127.0.0.1:5000/examination?xh=16010328&mm=281205ayh23
+@application.route('/examination')
+def examination():
+    studentNumber = request.args.get("xh")
+    password = request.args.get("mm")
+
+    bjut=BJUTjiaowu()
+    isLogin=bjut.loginNoCheckcode(studentNumber,password) # 登录
+    if isLogin==True:
+        '登录成功'
+        examInfo=bjut.getExamination()
+        return jsonify(examInfo)
+    else:
+        resp=make_response('请检查学号，密码是否正确') #自定义响应体
+        resp.status='400' # 自定义响应状态码
+        return resp
+
+# 考试信息查询
+# http://127.0.0.1:5000/grade?xh=16010328&mm=281205ayh23
+@application.route('/grade')
+def gradeinfo():
+    studentNumber = request.args.get("xh")
+    password = request.args.get("mm")
+
+    bjut=BJUTjiaowu()
+    isLogin=bjut.loginNoCheckcode(studentNumber,password) # 登录
+    if isLogin==True:
+        '登录成功'
+        examInfo=bjut.getGradeExam()
+        return jsonify(examInfo)
+    else:
+        resp=make_response('请检查学号，密码是否正确') #自定义响应体
+        resp.status='400' # 自定义响应状态码
+        return resp
 
 # 查空教室信息
 # http://127.0.0.1:5000/freeroom?building=1&week=%e4%b8%80&currentweek=8&time1=1&time2=2
@@ -133,4 +168,4 @@ def freeroom():
 
 # 服务器开始运行
 if __name__ == '__main__':
-    application.run('0.0.0.0')
+    application.run()

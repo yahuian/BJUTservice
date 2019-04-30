@@ -232,3 +232,82 @@ class BJUTjiaowu:
         }
 
         return(temp)
+
+    def getExamination(self):
+        '查询考试信息'
+        # 确保用户身份不变
+        mycookie = {"ASP.NET_SessionId": self.__sessionID}
+        s = requests.Session()
+        requests.utils.add_dict_to_cookiejar(s.cookies, mycookie)
+
+        # 获取考试信息
+        urlStudentName = urllib.parse.quote(str(self.__studentName.encode('gbk')))
+        examinationUrl = "http://188.131.128.233/xskscx.aspx?xh="+self.__studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121603"
+        headers = {
+            "Referer": "http://188.131.128.233/xs_main.aspx?xh="+self.__studentNumber,
+            "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+            }
+        response = s.get(url=examinationUrl, headers=headers)
+        html=response.content.decode("gbk")
+        soup = BeautifulSoup(html,"lxml")
+        trs = soup.find(id='DataGrid1').find_all('tr')
+        examList=[]
+        if len(trs)>1:
+            for index in range(1,len(trs)):
+                tdList=trs[index].find_all('td')
+                tempDir={
+                    #'classNum':tdList[0].get_text(),    # 选课课号
+                    'className':tdList[1].get_text(),   # 课程名称  
+                    #'stuName':tdList[2].get_text(),     # 学生姓名
+                    'examTime':tdList[3].get_text(),     # 考试时间
+                    'examRoom':tdList[4].get_text(),     # 考试地点
+                    'deskNum':tdList[5].get_text(),      # 座位号
+                    'school':tdList[6].get_text()       # 校区
+                }
+                examList.append(tempDir)
+            return examList
+        else:
+            return examList
+
+    def getGradeExam(self):
+        '等级考试信息'
+        # 确保用户身份不变
+        mycookie = {"ASP.NET_SessionId": self.__sessionID}
+        s = requests.Session()
+        requests.utils.add_dict_to_cookiejar(s.cookies, mycookie)
+
+        # 获取等级考试信息
+        urlStudentName = urllib.parse.quote(str(self.__studentName.encode('gbk')))
+        gradeExamURL = "http://188.131.128.233/xsdjkscx.aspx?xh="+self.__studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121603"
+        headers = {
+            "Referer": "http://188.131.128.233/xs_main.aspx?xh="+self.__studentNumber,
+            "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+            }
+        response = s.get(url=gradeExamURL, headers=headers)
+        html=response.content.decode("gbk")
+        soup = BeautifulSoup(html,"lxml")
+        trs = soup.find(id='DataGrid1').find_all('tr')
+        infoList=[]
+        if len(trs)>1:
+            for index in range(1,len(trs)):
+                tdList=trs[index].find_all('td')
+                tempDir={
+                    'schoolYear':tdList[0].get_text(),      # 学年
+                    'schoolWeek':tdList[1].get_text(),      # 学期  
+                    'gradeExamName':tdList[2].get_text(),   # 等级考试名称 
+                    'idNumber':tdList[3].get_text(),        # 准考证号
+                    'examDate':tdList[4].get_text(),        # 考试日期
+                    'score':tdList[5].get_text(),           # 成绩
+                    'listening':tdList[6].get_text(),       # 听力成绩
+                    'reading':tdList[7].get_text(),         # 阅读成绩
+                    'writting':tdList[8].get_text(),        # 写作成绩
+                    'all':tdList[9].get_text()              # 综合成绩
+                }
+                infoList.append(tempDir)
+            return infoList
+        else:
+            return infoList
