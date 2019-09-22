@@ -8,8 +8,8 @@ from bs4 import BeautifulSoup
 
 class BJUTjiaowu:
     '定义基本私有属性'
-    __default2Url = "http://188.131.128.233/default2.aspx"    # 教务初始页面地址
-    __checkCodeUrl = "http://188.131.128.233/CheckCode.aspx"  # 验证码地址
+    __default2Url = "http://39.105.71.59/default2.aspx"    # 教务初始页面地址
+    __checkCodeUrl = "http://39.105.71.59/CheckCode.aspx"  # 验证码地址
 
     __studentNumber = ''    # 学号
     __password = ''         # 密码
@@ -73,7 +73,8 @@ class BJUTjiaowu:
         }
         headers = {
             "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/7",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64)\
+            AppleWebKit/537.36 (KHTML, like Gecko) Chrome/7",
         }
         response = s.post(self.__default2Url, data, headers)
 
@@ -96,7 +97,7 @@ class BJUTjiaowu:
         s = requests.Session()
 
         # 感谢野生工大助手项目：https://chafen.bjut123.com/
-        url = 'http://188.131.128.233/default_vsso.aspx'
+        url = 'http://39.105.71.59/default_vsso.aspx'
 
         data = {
             'TextBox1': self.__studentNumber,
@@ -106,7 +107,8 @@ class BJUTjiaowu:
         }
         headers = {
             "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/7",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64)\
+            AppleWebKit/537.36 (KHTML, like Gecko) Chrome/7",
         }
 
         response = s.post(url, data, headers)
@@ -132,13 +134,15 @@ class BJUTjiaowu:
         # 获取学生基本信息
         urlStudentName = urllib.parse.quote(
             str(self.__studentName.encode('gbk')))
-        baseInfoUrl = "http://188.131.128.233/xsgrxx.aspx?xh=" + \
+        baseInfoUrl = "http://39.105.71.59/xsgrxx.aspx?xh=" + \
             self.__studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121501"
         headers = {
-            "Referer": "http://188.131.128.233/xs_main.aspx?xh="+self.__studentNumber,
+            "Referer": "http://39.105.71.59/xs_main.aspx?xh=" +
+            self.__studentNumber,
             "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64)\
+            AppleWebKit/537.36 (KHTML, like Gecko)\
+            Chrome/71.0.3578.98 Safari/537.36"
         }
         response = s.get(url=baseInfoUrl, headers=headers)
         html = response.content.decode("gbk")
@@ -166,7 +170,8 @@ class BJUTjiaowu:
         s = requests.Session()
         requests.utils.add_dict_to_cookiejar(s.cookies, mycookie)
         # 教务这个接口好呀，都不用发post请求就可以拿到课表数据
-        scheduleUrl = "http://188.131.128.233/xskb.aspx?xh=" + self.__studentNumber \
+        scheduleUrl = "http://39.105.71.59/xskb.aspx?xh=" + \
+            self.__studentNumber \
             + "&xhxx=" + self.__studentNumber + xn + xq
         response = s.get(url=scheduleUrl)
         html = response.content.decode("gbk")
@@ -175,7 +180,7 @@ class BJUTjiaowu:
         trs = soup.find(id='Table1').find_all('tr')
         for index in range(0, len(trs)):
             for td in trs[index].find_all('td'):
-                if td.string == None:
+                if td.string is None:
                     res = td.find_all(text=True)
                     i = 1
                     j = 0
@@ -221,13 +226,15 @@ class BJUTjiaowu:
         # 获取考试信息
         urlStudentName = urllib.parse.quote(
             str(self.__studentName.encode('gbk')))
-        examinationUrl = "http://188.131.128.233/xskscx.aspx?xh=" + \
+        examinationUrl = "http://39.105.71.59/xskscx.aspx?xh=" + \
             self.__studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121603"
         headers = {
-            "Referer": "http://188.131.128.233/xs_main.aspx?xh="+self.__studentNumber,
+            "Referer": "http://39.105.71.59/xs_main.aspx?xh=" +
+            self.__studentNumber,
             "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko)\
+            Chrome/71.0.3578.98 Safari/537.36"
         }
         response = s.get(url=examinationUrl, headers=headers)
         html = response.content.decode("gbk")
@@ -262,13 +269,15 @@ class BJUTjiaowu:
         # 获取等级考试信息
         urlStudentName = urllib.parse.quote(
             str(self.__studentName.encode('gbk')))
-        gradeExamURL = "http://188.131.128.233/xsdjkscx.aspx?xh=" + \
+        gradeExamURL = "http://39.105.71.59/xsdjkscx.aspx?xh=" + \
             self.__studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121603"
         headers = {
-            "Referer": "http://188.131.128.233/xs_main.aspx?xh="+self.__studentNumber,
+            "Referer": "http://39.105.71.59/xs_main.aspx?xh=" +
+            self.__studentNumber,
             "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko)\
+            Chrome/71.0.3578.98 Safari/537.36"
         }
         response = s.get(url=gradeExamURL, headers=headers)
         html = response.content.decode("gbk")
@@ -305,13 +314,15 @@ class BJUTjiaowu:
         # 获取特定学年和学期的成绩
         urlStudentName = urllib.parse.quote(
             str(self.__studentName.encode('gbk')))
-        scoreBaseUrl = "http://188.131.128.233/xscj_gc.aspx?xh=" + \
+        scoreBaseUrl = "http://39.105.71.59/xscj_gc.aspx?xh=" + \
             self.__studentNumber+"&xm="+urlStudentName+"&gnmkdm=N121605"
         headers = {
-            "Referer": "http://188.131.128.233/xs_main.aspx?xh="+self.__studentNumber,
+            "Referer": "http://39.105.71.59/xs_main.aspx?xh=" +
+            self.__studentNumber,
             "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko)\
+            Chrome/71.0.3578.98 Safari/537.36"
         }
         response = s.get(url=scoreBaseUrl, headers=headers)
         html = response.content.decode("gbk")
@@ -353,7 +364,8 @@ class BJUTjiaowu:
                     # 'englishName':tdList[15].get_text()         # 课程英文名
                 }
                 # 辅修双学位，创新创业学分，新生研讨课和第二课堂不计入加权和GPA
-                if tempDir['minorTag'] != '0' or tempDir['score'] == '通过' or tempDir['courseBelongTo'] == '第二课堂':
+                if tempDir['minorTag'] != '0' or tempDir['score'] == '通过' \
+                        or tempDir['courseBelongTo'] == '第二课堂':
                     # 去除多余字段
                     del(tempDir['courseBelongTo'])
                     del(tempDir['g'])
@@ -419,10 +431,12 @@ class BJUTjiaowu:
 
         for data in dataList_all:
             # 辅修双学位，创新创业学分，新生研讨课和第二课堂不计入加权和GPA
-            if data['minorTag'] != '0' or data['score'] == '通过' or data['courseBelongTo'] == '第二课堂':
+            if data['minorTag'] != '0' or data['score'] == '通过'\
+                     or data['courseBelongTo'] == '第二课堂':
                 pass
             else:
-                if float(data['score']) >= 60 and data['rebuildTag'] == '0':    # 首次就通过科目
+                # 首次就通过科目
+                if float(data['score']) >= 60 and data['rebuildTag'] == '0':
                     sum_g_mul_credit_all += data['g'] * data['credit']
                     sum_score_mul_credit_all += float(
                         data['score']) * data['credit']
@@ -447,7 +461,9 @@ class BJUTjiaowu:
                             tempList.append(data)
 
         for t in tempList:
-            if t['courseAttribute'] == '通识教育选修课' or t['courseAttribute'] == '专业任选课' or t['courseAttribute'] == '专业限选课':
+            if t['courseAttribute'] == '通识教育选修课' or\
+                t['courseAttribute'] == '专业任选课' or\
+                    t['courseAttribute'] == '专业限选课':
                 tempList.remove(t)  # 这三类选修课挂科了，重修没过或者没有参加重修，无所谓，不计入总加权
 
         # 多次重修没过的课程，选择最高分来计算加权
@@ -455,7 +471,8 @@ class BJUTjiaowu:
             for i in range(0, len(tempList)):
                 for j in range(1, len(tempList)):
                     if tempList[i]['courseName'] == tempList[j]['courseName']:
-                        if float(tempList[i]['score']) > float(tempList[j]['score']):
+                        if float(tempList[i]['score']) > \
+                             float(tempList[j]['score']):
                             tempList[j] = tempList[i]
                         else:
                             tempList[i] = tempList[j]

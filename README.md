@@ -6,7 +6,7 @@
 ## 功能简介
 **课表**：可以查询任意学年，任意学期的课表
 
-**空教室**：可以查询空教室（本部一教，三教，四教）
+**空教室**：可以查询空教室
 
 **成绩**：可以查询任意学年，任意学期的成绩，包含学期加权平均分和GPA，以及大学总加权平均分和GPA的计算
 
@@ -14,16 +14,16 @@
 
 **等级考试**：可以查看CET考试的成绩（注：只有教务系统中被录入的成绩才可查询）
 ## 项目结构
-images（展示图片）
-- BJUTsevice结构图.png
-- 工大小美.png
+```
+BJUTservice
+|	BJUT.py  	 # 核心爬虫
+|	app.py   	 # flask程序
+|---tools		 # 该项目中用到的一些小工具
+|	excel-db.py
+|---images		 # 存放项目相关的图片 
+|	...
+```
 
-tools（该项目中用到的小工具）
-- excel-db.py（有段时间教务系统中查空教室功能无法使用，该工具就是将全校本科生课程安排表数据读入到SQLite数据库）
-
-BJUT.py（核心爬虫）
-
-app.py（flask程序）
 ## 依赖项目
 **反向代理**：[公网直接上教务系统](https://ibjut.cn)，项目地址[Reverse-Proxy-of-BJUT-gdjwgl](https://github.com/ZenBuilds/Reverse-Proxy-of-BJUT-gdjwgl)
 ## 特别鸣谢
