@@ -25,23 +25,6 @@ class BJUTjiaowu:
     def __init__(self):
         '构造函数'
 
-    def getCheckCode(self):
-        '获取验证码'
-        s = requests.Session()
-        response = s.get(self.__checkCodeUrl)
-        image = response.content
-        DstDir = os.getcwd()+"/consoleDev/"
-        codeName = list(s.cookies)[0].value  # 验证码的名字就是sessionID
-        try:
-            with open(DstDir + codeName + ".jpg", "wb") as jpg:
-                jpg.write(image)
-        except IOError:
-            return "获取验证码失败"
-        else:
-            self.__sessionID = list(s.cookies)[0].value
-            temp = {"sessionID": list(s.cookies)[0].value}
-            return temp
-
     def login(self, studentNumber, password, checkCode):
         '登录教务管理系统'
         self.__studentNumber = studentNumber
