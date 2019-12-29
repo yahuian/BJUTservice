@@ -8,7 +8,7 @@ application = Flask(__name__)  # 实例化一个程序
 # 主页
 @application.route('/')
 def index():
-    return "<h1 style='color:blue'>智慧北工大</h1>"
+    return application.send_static_file('index.html')
 
 
 # 获取学生基本信息
