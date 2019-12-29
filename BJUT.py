@@ -5,7 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 from lxml import etree
 
-reverse_proxy_address = 'http://39.105.71.59/'
+# reverse_proxy_address = 'http://39.105.71.59/'
+reverse_proxy_address = 'http://gdjwgl.bjut.edu.cn/'
+
 
 
 class Student:
@@ -37,14 +39,10 @@ class Student:
         html = etree.HTML(content)
         try:
             welcome_text = html.xpath('//*[@id="xhxm"]/text()')[0]
-        except IndexError:  # 说明接口有问题
-            return False
-
-        if welcome_text == '欢迎您使用正方现代教学管理信息系统！':  # 没有登陆进去，说明用户名或者密码错误
-            return False
-        else:
             self.name = welcome_text[0:-2]
             return True
+        except IndexError:  # 模拟登录失败
+            return False
 
     def get_base_info(self) -> bool:
         """获取学生基本信息"""
@@ -57,10 +55,10 @@ class Student:
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
         try:
-            self.college = soup.find(id='lbl_xy').get_text()
-            self.major = soup.find(id='lbl_zymc').get_text()
-            self.class_name = soup.find(id='lbl_xzb').get_text()
-        except AttributeError:  # 接口出错
+            self.college = soup.find(id='lbl_xy').get_text() #学院
+            self.major = soup.find(id='lbl_zymc').get_text() #专业名称
+            self.class_name = soup.find(id='lbl_xzb').get_text() #行政班
+        except AttributeError:  #获取学生个人信息失败
             return False
         return True
 
@@ -68,6 +66,8 @@ class Student:
         """获取课程表信息"""
         # 教务这个接口好呀，都不用发post请求就可以拿到课表数据
         schedule_url = reverse_proxy_address + 'xskb.aspx?xh=' + self.number + '&xhxx=' + self.number + xn + xq
+        print('课表url')
+        print(schedule_url)
         response = self.session.get(url=schedule_url)
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
@@ -75,7 +75,7 @@ class Student:
         # 获取课表信息
         trs = soup.find(id='Table1').find_all('tr')
         time_table = []
-        for index in range(0, len(trs)):
+        for index in range(0, len(trs)): #<table>标签: <tr>-行, <td>-表格单元
             for td in trs[index].find_all('td'):
                 if td.string is None:
                     res = td.find_all(text=True)
@@ -224,9 +224,9 @@ class Student:
             else:
                 data_term.append(temp_dir)
 
-        sum_g_mul_credit_term = 0.0
-        sum_score_mul_credit_term = 0.0
-        sum_credit_term = 0.0
+        sum_g_mul_credit_term = 0.0 #∑GPA*学分
+        sum_score_mul_credit_term = 0.0 #∑成绩*学分
+        sum_credit_term = 0.0 #∑学分
 
         for data in data_term:
             sum_g_mul_credit_term += data['g'] * data['credit']
