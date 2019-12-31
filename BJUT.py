@@ -139,8 +139,8 @@ class Student:
             exam_list.append(temp_dir)
         return exam_list
 
-    def get_grade_exam(self) -> list:
-        """等级考试信息"""
+    def get_CET_exam(self) -> list:
+        """CET考试信息"""
         name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
         grade_url = reverse_proxy_address + 'xsdjkscx.aspx?xh=' + self.number + '&xm' + name_url + '&gnmkdm=N121603'
         headers = {
@@ -232,12 +232,12 @@ class Student:
             else:
                 data_term.append(temp_dir)
 
-        print('辅修课程')
-        print(data_minor)
-        print('其余课程')
-        print(data_other)
-        print('本专业课程')
-        print(data_term)
+        # print('辅修课程')
+        # print(data_minor)
+        # print('其余课程')
+        # print(data_other)
+        # print('本专业课程')
+        # print(data_term)
 
         # 本专业
         sum_g_mul_credit_term = 0.0 #∑GPA*学分
@@ -378,9 +378,9 @@ class Student:
             sum_score_mul_credit_all += float(t['score']) * t['credit']
             sum_credit_all += t['credit']
 
-        print(sum_g_mul_credit_all)
-        print(sum_score_mul_credit_all)
-        print(sum_credit_all)
+        # print(sum_g_mul_credit_all)
+        # print(sum_score_mul_credit_all)
+        # print(sum_credit_all)
 
         try:
             GPA_all = sum_g_mul_credit_all / sum_credit_all  # 总GPA
@@ -468,7 +468,6 @@ class Student:
             'GPA_all_minor': GPA_all_minor, # 大学总绩点(辅修)
             'SCORE_term_minor': SCORE_term_minor, #本学期总加权(辅修) 
             'GPA_term_minor': GPA_term_minor #本学期总绩点(辅修)
-
         }
         result = {
             'score': data_term,

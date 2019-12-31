@@ -59,7 +59,7 @@ def schedule():
     if info_schedule:
         return jsonify(info_schedule)
     else:
-        return jsonify({'schedule','no_schedule'})
+        return jsonify({'schedule':'no_schedule'})
 
 
 # 考试信息查询
@@ -80,12 +80,12 @@ def examination():
     if info_examination:
         return jsonify(info_examination)
     else:
-        return jsonify(['no_examination'])
+        return jsonify({'examination': 'no_examination'})
 
 
-# 等级考试查询
-@application.route('/grade', methods=['POST'])
-def grade_info():
+# CET考试查询
+@application.route('/cet', methods=['POST'])
+def cet_info():
     number = request.form.get("xh")
     password = request.form.get("mm")
 
@@ -97,11 +97,11 @@ def grade_info():
         resp.status = '400'  # 自定义响应状态码
         return resp
 
-    info_grade = stu.get_grade_exam()
-    if info_grade:
-        jsonify(info_grade)
+    info_cet = stu.get_CET_exam()
+    if info_cet:
+        return jsonify(info_cet)
     else:
-        jsonify('no_grade')
+        return jsonify({'grade':'no_grade'})
 
 # 成绩查询
 @application.route('/score', methods=['POST'])
@@ -123,7 +123,7 @@ def score():
     if info_score:
         return jsonify(info_score)
     else:
-        return jsonify({'score','no_score'})
+        return jsonify({'score':'no_score'})
 
 
 # 服务器开始运行
