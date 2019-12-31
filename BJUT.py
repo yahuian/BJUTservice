@@ -5,7 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 from lxml import etree
 
-reverse_proxy_address = 'http://39.105.71.59/'
+# reverse_proxy_address = 'http://39.105.71.59/'
+reverse_proxy_address = 'http://gdjwgl.bjut.edu.cn/'
+
 
 
 class Student:
@@ -37,14 +39,10 @@ class Student:
         html = etree.HTML(content)
         try:
             welcome_text = html.xpath('//*[@id="xhxm"]/text()')[0]
-        except IndexError:  # 说明接口有问题
-            return False
-
-        if welcome_text == '欢迎您使用正方现代教学管理信息系统！':  # 没有登陆进去，说明用户名或者密码错误
-            return False
-        else:
             self.name = welcome_text[0:-2]
             return True
+        except IndexError:  # 模拟登录失败
+            return False
 
     def get_base_info(self) -> bool:
         """获取学生基本信息"""
@@ -57,10 +55,10 @@ class Student:
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
         try:
-            self.college = soup.find(id='lbl_xy').get_text()
-            self.major = soup.find(id='lbl_zymc').get_text()
-            self.class_name = soup.find(id='lbl_xzb').get_text()
-        except AttributeError:  # 接口出错
+            self.college = soup.find(id='lbl_xy').get_text() #学院
+            self.major = soup.find(id='lbl_zymc').get_text() #专业名称
+            self.class_name = soup.find(id='lbl_xzb').get_text() #行政班
+        except AttributeError:  #获取学生个人信息失败
             return False
         return True
 
@@ -68,6 +66,8 @@ class Student:
         """获取课程表信息"""
         # 教务这个接口好呀，都不用发post请求就可以拿到课表数据
         schedule_url = reverse_proxy_address + 'xskb.aspx?xh=' + self.number + '&xhxx=' + self.number + xn + xq
+        print('课表url')
+        print(schedule_url)
         response = self.session.get(url=schedule_url)
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
@@ -75,7 +75,7 @@ class Student:
         # 获取课表信息
         trs = soup.find(id='Table1').find_all('tr')
         time_table = []
-        for index in range(0, len(trs)):
+        for index in range(0, len(trs)): #<table>标签: <tr>-行, <td>-表格单元
             for td in trs[index].find_all('td'):
                 if td.string is None:
                     res = td.find_all(text=True)
@@ -139,8 +139,8 @@ class Student:
             exam_list.append(temp_dir)
         return exam_list
 
-    def get_grade_exam(self) -> list:
-        """等级考试信息"""
+    def get_CET_exam(self) -> list:
+        """CET考试信息"""
         name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
         grade_url = reverse_proxy_address + 'xsdjkscx.aspx?xh=' + self.number + '&xm' + name_url + '&gnmkdm=N121603'
         headers = {
@@ -176,6 +176,7 @@ class Student:
             "Referer": reverse_proxy_address + 'xs_main.aspx?xh=' + self.number
         }
         response = self.session.get(url=score_url, headers=headers)
+
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
         view_state = soup.find(id="Form1").find_all('input')[0]['value']
@@ -185,13 +186,17 @@ class Student:
             "ddlXQ": xq,  # 设置学期
             "Button1": ''
         }
+        headers = {
+            "Referer": reverse_proxy_address + 'xscj_gc.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121605'
+        }
         response = self.session.post(url=score_url, data=data, headers=headers)
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
 
-        # 获取考试成绩
+        # 计算所选学年学期的GPA和加权平均分
         data_term = []  # 计入加权的课程
         data_other = []  # 不计入加权的课程
+        data_minor = [] # 辅修专业课程(都计入辅修专业加权)
         table = soup.find(id="Datagrid1").find_all('tr')
         for index in range(1, len(table)):
             td_list = table[index].find_all('td')
@@ -213,9 +218,12 @@ class Student:
                 # 'rebuildTag':td_list[14].get_text(),         # 重修标记
                 # 'englishName':td_list[15].get_text()         # 课程英文名
             }
-            # 辅修双学位，创新创业学分，新生研讨课和第二课堂不计入加权和GPA
-            if temp_dir['minorTag'] != '0' or temp_dir['score'] == '通过' \
-                    or temp_dir['courseBelongTo'] == '第二课堂':
+
+            # 提出辅修专业课程
+            if temp_dir['minorTag'] != '0':
+                data_minor.append(temp_dir)
+            # 创新创业学分，新生研讨课和第二课堂不计入加权和GPA
+            elif temp_dir['score'] == '通过' or temp_dir['courseBelongTo'] == '第二课堂':
                 # 去除多余字段
                 del (temp_dir['courseBelongTo'])
                 del (temp_dir['g'])
@@ -224,9 +232,17 @@ class Student:
             else:
                 data_term.append(temp_dir)
 
-        sum_g_mul_credit_term = 0.0
-        sum_score_mul_credit_term = 0.0
-        sum_credit_term = 0.0
+        # print('辅修课程')
+        # print(data_minor)
+        # print('其余课程')
+        # print(data_other)
+        # print('本专业课程')
+        # print(data_term)
+
+        # 本专业
+        sum_g_mul_credit_term = 0.0 #∑GPA*学分
+        sum_score_mul_credit_term = 0.0 #∑成绩*学分
+        sum_credit_term = 0.0 #∑学分
 
         for data in data_term:
             sum_g_mul_credit_term += data['g'] * data['credit']
@@ -245,7 +261,29 @@ class Student:
             GPA_term = 0.0
             SCORE_term = 0.0
 
-        # 获取大学所有成绩
+        # 辅修专业
+        sum_g_mul_credit_term_minor = 0.0 #∑GPA*学分
+        sum_score_mul_credit_term_minor = 0.0 #∑成绩*学分
+        sum_credit_term_minor = 0.0 #∑学分
+
+        for data in data_minor:
+            sum_g_mul_credit_term_minor += data['g'] * data['credit']
+            sum_score_mul_credit_term_minor += float(data['score']) * data['credit']
+            sum_credit_term_minor += data['credit']
+            
+            # 去除多余字段
+            del (data['courseBelongTo'])
+            del (data['g'])
+            del (data['minorTag'])
+
+        try:
+            GPA_term_minor = sum_g_mul_credit_term_minor / sum_credit_term_minor #学期GPA
+            SCORE_term_minor = sum_score_mul_credit_term_minor / sum_credit_term_minor #学期加权
+        except ZeroDivisionError:
+            GPA_term_minor = 0.0
+            SCORE_term_minor = 0.0
+
+        # 获取大学总GPA和总加权平均分
         data = {
             "__VIEWSTATE": view_state,
             "ddlXN": '',
@@ -255,8 +293,10 @@ class Student:
         response = self.session.post(url=score_url, data=data, headers=headers)
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
-        # 获取考试成绩
-        dataList_all = []
+
+        dataList_all = [] # 本专业所有课程成绩
+        dataList_all_minor = [] # 辅修专业所有课程成绩
+
         table = soup.find(id="Datagrid1").find_all('tr')
         for index in range(1, len(table)):
             td_list = table[index].find_all('td')
@@ -271,24 +311,28 @@ class Student:
                 'makeupScore': td_list[10].get_text(),  # 补考成绩
                 'rebuildTag': td_list[14].get_text()  # 重修标记
             }
-            dataList_all.append(temp_dir)
 
+            # 提出辅修专业成绩
+            if temp_dir['minorTag'] != '0':
+                dataList_all_minor.append(temp_dir)
+            else:
+                dataList_all.append(temp_dir)
+
+        # 本专业
         sum_g_mul_credit_all = 0.0
         sum_score_mul_credit_all = 0.0
         sum_credit_all = 0.0
         tempList = []
 
         for data in dataList_all:
-            # 辅修双学位，创新创业学分，新生研讨课和第二课堂不计入加权和GPA
-            if data['minorTag'] != '0' or data['score'] == '通过' \
-                    or data['courseBelongTo'] == '第二课堂':
+            # 创新创业学分，新生研讨课和第二课堂不计入本专业加权和GPA
+            if data['score'] == '通过' or data['courseBelongTo'] == '第二课堂':
                 pass
             else:
                 # 首次就通过科目
                 if float(data['score']) >= 60 and data['rebuildTag'] == '0':
                     sum_g_mul_credit_all += data['g'] * data['credit']
-                    sum_score_mul_credit_all += float(
-                        data['score']) * data['credit']
+                    sum_score_mul_credit_all += float(data['score']) * data['credit']
                     sum_credit_all += data['credit']
                 else:
                     if data['makeupScore'] == '60':  # 补考后通过
@@ -334,6 +378,10 @@ class Student:
             sum_score_mul_credit_all += float(t['score']) * t['credit']
             sum_credit_all += t['credit']
 
+        # print(sum_g_mul_credit_all)
+        # print(sum_score_mul_credit_all)
+        # print(sum_credit_all)
+
         try:
             GPA_all = sum_g_mul_credit_all / sum_credit_all  # 总GPA
             SCORE_all = sum_score_mul_credit_all / sum_credit_all  # 总加权
@@ -341,15 +389,90 @@ class Student:
             GPA_all = 0.0
             SCORE_all = 0.0
 
+        # 辅修专业
+        sum_g_mul_credit_all_minor = 0.0
+        sum_score_mul_credit_all_minor = 0.0
+        sum_credit_all_minor = 0.0
+        tempList_minor = []
+
+        for data in dataList_all_minor:
+            # 创新创业学分，新生研讨课和第二课堂不计入本专业加权和GPA
+            if data['score'] == '通过' or data['courseBelongTo'] == '第二课堂':
+                pass
+            else:
+                # 首次就通过科目
+                if float(data['score']) >= 60 and data['rebuildTag'] == '0':
+                    sum_g_mul_credit_all_minor += data['g'] * data['credit']
+                    sum_score_mul_credit_all_minor += float(
+                        data['score']) * data['credit']
+                    sum_credit_all_minor += data['credit']
+                else:
+                    if data['makeupScore'] == '60':  # 补考后通过
+                        sum_g_mul_credit_all_minor += 2.00 * data['credit']
+                        sum_score_mul_credit_all_minor += 60 * data['credit']
+                        sum_credit_all_minor += data['credit']
+
+                    elif data['rebuildTag'] == '0':  # 补考没过，或者没参加补考，或者该课没有补考机会
+                        tempList_minor.append(data)  # 暂时先存放到tempList_minor中
+
+                    elif data['rebuildTag'] == '1':
+                        if float(data['score']) >= 60:
+                            # 重修后过了，得从tempList中删除以前没过的同一课程
+                            for t in tempList_minor:
+                                if data['courseName'] == t['courseName']:
+                                    tempList_minor.remove(t)
+                                    tempList_minor.append(data)
+                        else:  # 重修没过
+                            tempList_minor.append(data)
+
+        for t in tempList_minor:
+            if t['courseAttribute'] == '通识教育选修课' or \
+                    t['courseAttribute'] == '专业任选课' or \
+                    t['courseAttribute'] == '专业限选课':
+                tempList_minor.remove(t)  # 这三类选修课挂科了，重修没过或者没有参加重修，无所谓，不计入总加权
+
+        # 多次重修没过的课程，选择最高分来计算加权
+        try:
+            for i in range(0, len(tempList_minor)):
+                for j in range(1, len(tempList_minor)):
+                    if tempList_minor[i]['courseName'] == tempList_minor[j]['courseName']:
+                        if float(tempList_minor[i]['score']) > \
+                                float(tempList_minor[j]['score']):
+                            tempList_minor[j] = tempList_minor[i]
+                        else:
+                            tempList_minor[i] = tempList_minor[j]
+        except IndexError:
+            pass
+
+        # 将这些特殊的课程和正常课程的加权合并
+        for t in tempList_minor:
+            sum_g_mul_credit_all_minor += t['g'] * t['credit']
+            sum_score_mul_credit_all_minor += float(t['score']) * t['credit']
+            sum_credit_all_minor += t['credit']
+
+        try:
+            GPA_all_minor = sum_g_mul_credit_all_minor / sum_credit_all_minor  # 总GPA(辅修专业)
+            SCORE_all_minor = sum_score_mul_credit_all_minor / sum_credit_all_minor  # 总加权(辅修专业)
+        except ZeroDivisionError:
+            GPA_all_minor = 0.0
+            SCORE_all_minor = 0.0
+
+        # 辅修专业
+
         summery = {
             'SCORE_all': SCORE_all,  # 大学总加权
             'GPA_all': GPA_all,  # 大学总绩点
             'SCORE_term': SCORE_term,  # 本学期加权
-            'GPA_term': GPA_term  # 本学期绩点
+            'GPA_term': GPA_term,  # 本学期绩点
+            'SCORE_all_minor': SCORE_all_minor, #大学总加权(辅修)
+            'GPA_all_minor': GPA_all_minor, # 大学总绩点(辅修)
+            'SCORE_term_minor': SCORE_term_minor, #本学期总加权(辅修) 
+            'GPA_term_minor': GPA_term_minor #本学期总绩点(辅修)
         }
         result = {
             'score': data_term,
             'other': data_other,
+            'minor': data_minor,
             'summery': summery
         }
         return result

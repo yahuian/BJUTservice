@@ -55,8 +55,11 @@ def schedule():
         resp.status = '400'  # 自定义响应状态码
         return resp
 
-    info = stu.get_schedule(xn=xn, xq=xq)
-    return jsonify(info)
+    info_schedule = stu.get_schedule(xn=xn, xq=xq)
+    if info_schedule:
+        return jsonify(info_schedule)
+    else:
+        return jsonify({'schedule':'no_schedule'})
 
 
 # 考试信息查询
@@ -73,13 +76,16 @@ def examination():
         resp.status = '400'  # 自定义响应状态码
         return resp
 
-    info = stu.get_examination()
-    return jsonify(info)
+    info_examination = stu.get_examination()
+    if info_examination:
+        return jsonify(info_examination)
+    else:
+        return jsonify({'examination': 'no_examination'})
 
 
-# 等级考试查询
-@application.route('/grade', methods=['POST'])
-def grade_info():
+# CET考试查询
+@application.route('/cet', methods=['POST'])
+def cet_info():
     number = request.form.get("xh")
     password = request.form.get("mm")
 
@@ -91,9 +97,11 @@ def grade_info():
         resp.status = '400'  # 自定义响应状态码
         return resp
 
-    info = stu.get_grade_exam()
-    return jsonify(info)
-
+    info_cet = stu.get_CET_exam()
+    if info_cet:
+        return jsonify(info_cet)
+    else:
+        return jsonify({'grade':'no_grade'})
 
 # 成绩查询
 @application.route('/score', methods=['POST'])
@@ -111,8 +119,11 @@ def score():
         resp.status = '400'  # 自定义响应状态码
         return resp
 
-    info = stu.get_score(xn=xn, xq=xq)
-    return jsonify(info)
+    info_score = stu.get_score(xn=xn, xq=xq)
+    if info_score:
+        return jsonify(info_score)
+    else:
+        return jsonify({'score':'no_score'})
 
 
 # 服务器开始运行
