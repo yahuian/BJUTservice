@@ -8,28 +8,29 @@ from lxml import etree
 VPN_BJUT_URL = 'https://vpn.bjut.edu.cn/prx/000/http/localhost/login'
 VPN_BJUT_GDJWGL_URL = 'https://vpn.bjut.edu.cn/prx/000/http/gdjwgl.bjut.edu.cn/'
 
+
 class Student:
     def __init__(self):
         self.session = None
         self.number = ''
         self.password = ''
+        self.vpn_pwd = ''  # 登录VPN的密码
         self.name = ''
         self.college = ''
         self.major = ''
         self.class_name = ''
 
-
-
-    def login_vpn(self, number: str, password: str) -> bool:
+    def login_vpn(self, number: str, password: str, vpn_pwd: str) -> bool:
         try:
             self.number = number
             self.password = password
+            self.vpn_pwd = vpn_pwd
 
             # post VPN_BJUT_URL
             self.session = requests.Session()
             data_vpn = {
                 'uname': self.number,
-                'pwd1': self.password
+                'pwd1': self.vpn_pwd
             }
             r_vpn = self.session.post(VPN_BJUT_URL, data=data_vpn)
             r_vpn.raise_for_status()
@@ -88,10 +89,10 @@ class Student:
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
         try:
-            self.college = soup.find(id='lbl_xy').get_text() #学院
-            self.major = soup.find(id='lbl_zymc').get_text() #专业名称
-            self.class_name = soup.find(id='lbl_xzb').get_text() #行政班
-        except AttributeError:  #获取学生个人信息失败
+            self.college = soup.find(id='lbl_xy').get_text()  # 学院
+            self.major = soup.find(id='lbl_zymc').get_text()  # 专业名称
+            self.class_name = soup.find(id='lbl_xzb').get_text()  # 行政班
+        except AttributeError:  # 获取学生个人信息失败
             return False
         return True
 
@@ -108,7 +109,7 @@ class Student:
         # 获取课表信息
         trs = soup.find(id='Table1').find_all('tr')
         time_table = []
-        for index in range(0, len(trs)): #<table>标签: <tr>-行, <td>-表格单元
+        for index in range(0, len(trs)):  # <table>标签: <tr>-行, <td>-表格单元
             for td in trs[index].find_all('td'):
                 if td.string is None:
                     res = td.find_all(text=True)
@@ -229,7 +230,7 @@ class Student:
         # 计算所选学年学期的GPA和加权平均分
         data_term = []  # 计入加权的课程
         data_other = []  # 不计入加权的课程
-        data_minor = [] # 辅修专业课程(都计入辅修专业加权)
+        data_minor = []  # 辅修专业课程(都计入辅修专业加权)
         table = soup.find(id="Datagrid1").find_all('tr')
         for index in range(1, len(table)):
             td_list = table[index].find_all('td')
@@ -273,9 +274,9 @@ class Student:
         # print(data_term)
 
         # 本专业
-        sum_g_mul_credit_term = 0.0 #∑GPA*学分
-        sum_score_mul_credit_term = 0.0 #∑成绩*学分
-        sum_credit_term = 0.0 #∑学分
+        sum_g_mul_credit_term = 0.0  # ∑GPA*学分
+        sum_score_mul_credit_term = 0.0  # ∑成绩*学分
+        sum_credit_term = 0.0  # ∑学分
 
         for data in data_term:
             sum_g_mul_credit_term += data['g'] * data['credit']
@@ -295,23 +296,23 @@ class Student:
             SCORE_term = 0.0
 
         # 辅修专业
-        sum_g_mul_credit_term_minor = 0.0 #∑GPA*学分
-        sum_score_mul_credit_term_minor = 0.0 #∑成绩*学分
-        sum_credit_term_minor = 0.0 #∑学分
+        sum_g_mul_credit_term_minor = 0.0  # ∑GPA*学分
+        sum_score_mul_credit_term_minor = 0.0  # ∑成绩*学分
+        sum_credit_term_minor = 0.0  # ∑学分
 
         for data in data_minor:
             sum_g_mul_credit_term_minor += data['g'] * data['credit']
             sum_score_mul_credit_term_minor += float(data['score']) * data['credit']
             sum_credit_term_minor += data['credit']
-            
+
             # 去除多余字段
             del (data['courseBelongTo'])
             del (data['g'])
             del (data['minorTag'])
 
         try:
-            GPA_term_minor = sum_g_mul_credit_term_minor / sum_credit_term_minor #学期GPA
-            SCORE_term_minor = sum_score_mul_credit_term_minor / sum_credit_term_minor #学期加权
+            GPA_term_minor = sum_g_mul_credit_term_minor / sum_credit_term_minor  # 学期GPA
+            SCORE_term_minor = sum_score_mul_credit_term_minor / sum_credit_term_minor  # 学期加权
         except ZeroDivisionError:
             GPA_term_minor = 0.0
             SCORE_term_minor = 0.0
@@ -327,8 +328,8 @@ class Student:
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
 
-        dataList_all = [] # 本专业所有课程成绩
-        dataList_all_minor = [] # 辅修专业所有课程成绩
+        dataList_all = []  # 本专业所有课程成绩
+        dataList_all_minor = []  # 辅修专业所有课程成绩
 
         table = soup.find(id="Datagrid1").find_all('tr')
         for index in range(1, len(table)):
@@ -497,10 +498,10 @@ class Student:
             'GPA_all': GPA_all,  # 大学总绩点
             'SCORE_term': SCORE_term,  # 本学期加权
             'GPA_term': GPA_term,  # 本学期绩点
-            'SCORE_all_minor': SCORE_all_minor, #大学总加权(辅修)
-            'GPA_all_minor': GPA_all_minor, # 大学总绩点(辅修)
-            'SCORE_term_minor': SCORE_term_minor, #本学期总加权(辅修) 
-            'GPA_term_minor': GPA_term_minor #本学期总绩点(辅修)
+            'SCORE_all_minor': SCORE_all_minor,  # 大学总加权(辅修)
+            'GPA_all_minor': GPA_all_minor,  # 大学总绩点(辅修)
+            'SCORE_term_minor': SCORE_term_minor,  # 本学期总加权(辅修)
+            'GPA_term_minor': GPA_term_minor  # 本学期总绩点(辅修)
         }
         result = {
             'score': data_term,

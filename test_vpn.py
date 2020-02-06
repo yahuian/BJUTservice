@@ -1,7 +1,7 @@
 from BJUT import Student
 
 stu = Student()
-login = stu.login_vpn('16041527','xf408408') #模拟登录
+login = stu.login_vpn('16041527','xf408408','xf408408') #模拟登录
 if login:
     print(stu.name + '\n' + stu.name + '\n')
 
