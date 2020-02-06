@@ -34,7 +34,7 @@ def base_info():
         }
         return jsonify(info)
     else:
-        resp = make_response('获取学生基本信息错误')
+        resp = make_response('获取学生基本信息失败')
         resp.status = '500'
         return resp
 

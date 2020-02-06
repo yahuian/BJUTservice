@@ -5,10 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from lxml import etree
 
-# reverse_proxy_address = 'http://39.105.71.59/'
-reverse_proxy_address = 'http://gdjwgl.bjut.edu.cn/'
-
-
+VPN_BJUT_URL = 'https://vpn.bjut.edu.cn/prx/000/http/localhost/login'
+VPN_BJUT_GDJWGL_URL = 'https://vpn.bjut.edu.cn/prx/000/http/gdjwgl.bjut.edu.cn/'
 
 class Student:
     def __init__(self):
@@ -20,13 +18,48 @@ class Student:
         self.major = ''
         self.class_name = ''
 
+
+
+    def login_vpn(self, number: str, password: str) -> bool:
+        try:
+            self.number = number
+            self.password = password
+
+            # post VPN_BJUT_URL
+            self.session = requests.Session()
+            data_vpn = {
+                'uname': self.number,
+                'pwd1': self.password
+            }
+            r_vpn = self.session.post(VPN_BJUT_URL, data=data_vpn)
+            r_vpn.raise_for_status()
+            print('welcome页面响应的url: ' + r_vpn.url)
+
+            url_without_code = VPN_BJUT_GDJWGL_URL + 'default_vsso.aspx'
+            data_vpn_gdjwgl = {
+                'TextBox1': self.number,
+                'TextBox2': self.password,
+                'RadioButtonList1_2': '%D1%A7%C9%FA',  # “学生”的gbk编码
+            }
+            r_vpn_gdjwgl = self.session.post(url_without_code, data_vpn_gdjwgl)
+            # 从主页获取学生的姓名
+            print('gdjwgl页面成功登录后的url: ' + r_vpn_gdjwgl.url)
+            content = r_vpn_gdjwgl.content.decode('gbk')
+            html = etree.HTML(content)
+            welcome_text = html.xpath('//*[@id="xhxm"]/text()')[0]
+            self.name = welcome_text[0:-2]
+            return True
+        except:
+            print('VPN登录失败')
+            return False
+
     def login_without_code(self, number: str, password: str) -> bool:
         """无验证码登录,原理是教务有个接口本身是不需要输入验证码的"""
         self.number = number
         self.password = password
 
         self.session = requests.Session()  # 开启一次session
-        url = reverse_proxy_address + 'default_vsso.aspx'  # 感谢野生工大助手项目：https://chafen.bjut123.com/
+        url = VPN_BJUT_GDJWGL_URL + 'default_vsso.aspx'  # 感谢野生工大助手项目：https://chafen.bjut123.com/
         data = {
             'TextBox1': self.number,
             'TextBox2': self.password,
@@ -47,9 +80,9 @@ class Student:
     def get_base_info(self) -> bool:
         """获取学生基本信息"""
         name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
-        base_info_url = reverse_proxy_address + 'xsgrxx.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121501'
+        base_info_url = VPN_BJUT_GDJWGL_URL + 'xsgrxx.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121501'
         headers = {
-            "Referer": reverse_proxy_address + 'xs_main.aspx?xh=' + self.number
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
         }
         response = self.session.get(url=base_info_url, headers=headers)
         html = response.content.decode("gbk")
@@ -65,7 +98,7 @@ class Student:
     def get_schedule(self, xn: str, xq: str) -> dict:
         """获取课程表信息"""
         # 教务这个接口好呀，都不用发post请求就可以拿到课表数据
-        schedule_url = reverse_proxy_address + 'xskb.aspx?xh=' + self.number + '&xhxx=' + self.number + xn + xq
+        schedule_url = VPN_BJUT_GDJWGL_URL + 'xskb.aspx?xh=' + self.number + '&xhxx=' + self.number + xn + xq
         print('课表url')
         print(schedule_url)
         response = self.session.get(url=schedule_url)
@@ -115,9 +148,9 @@ class Student:
     def get_examination(self) -> list:
         """查询考试信息"""
         name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
-        exam_url = reverse_proxy_address + 'xskscx.aspx?xh=' + self.number + '&xm' + name_url + '&gnmkdm=N121603'
+        exam_url = VPN_BJUT_GDJWGL_URL + 'xskscx.aspx?xh=' + self.number + '&xm' + name_url + '&gnmkdm=N121603'
         headers = {
-            "Referer": reverse_proxy_address + 'xs_main.aspx?xh=' + self.number
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
         }
         response = self.session.get(url=exam_url, headers=headers)
         html = response.content.decode("gbk")
@@ -142,9 +175,9 @@ class Student:
     def get_CET_exam(self) -> list:
         """CET考试信息"""
         name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
-        grade_url = reverse_proxy_address + 'xsdjkscx.aspx?xh=' + self.number + '&xm' + name_url + '&gnmkdm=N121603'
+        grade_url = VPN_BJUT_GDJWGL_URL + 'xsdjkscx.aspx?xh=' + self.number + '&xm' + name_url + '&gnmkdm=N121603'
         headers = {
-            "Referer": reverse_proxy_address + 'xs_main.aspx?xh=' + self.number
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
         }
         response = self.session.get(url=grade_url, headers=headers)
         html = response.content.decode("gbk")
@@ -171,9 +204,9 @@ class Student:
     def get_score(self, xn: str, xq: str) -> dict:
         """成绩查询"""
         name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
-        score_url = reverse_proxy_address + 'xscj_gc.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121605'
+        score_url = VPN_BJUT_GDJWGL_URL + 'xscj_gc.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121605'
         headers = {
-            "Referer": reverse_proxy_address + 'xs_main.aspx?xh=' + self.number
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
         }
         response = self.session.get(url=score_url, headers=headers)
 
@@ -187,7 +220,7 @@ class Student:
             "Button1": ''
         }
         headers = {
-            "Referer": reverse_proxy_address + 'xscj_gc.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121605'
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xscj_gc.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121605'
         }
         response = self.session.post(url=score_url, data=data, headers=headers)
         html = response.content.decode("gbk")
