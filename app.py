@@ -17,7 +17,7 @@ def base_info():
     number = request.form.get('xh')
     password = request.form.get('mm')
     stu = Student()
-    login = stu.login_without_code(number, password)
+    login = stu.login_vpn(number, password)
 
     if not login:
         resp = make_response('请检查学号，密码是否正确')  # 自定义响应体
@@ -48,7 +48,7 @@ def schedule():
     xq = request.form.get("xq")
 
     stu = Student()
-    login = stu.login_without_code(number, password)
+    login = stu.login_vpn(number, password)
 
     if not login:
         resp = make_response('请检查学号，密码是否正确')  # 自定义响应体
@@ -69,7 +69,7 @@ def examination():
     password = request.form.get("mm")
 
     stu = Student()
-    login = stu.login_without_code(number, password)
+    login = stu.login_vpn(number, password)
 
     if not login:
         resp = make_response('请检查学号，密码是否正确')  # 自定义响应体
@@ -90,7 +90,7 @@ def cet_info():
     password = request.form.get("mm")
 
     stu = Student()
-    login = stu.login_without_code(number, password)
+    login = stu.login_vpn(number, password)
 
     if not login:
         resp = make_response('请检查学号，密码是否正确')  # 自定义响应体
@@ -112,7 +112,7 @@ def score():
     xq = request.form.get("xq")
 
     stu = Student()
-    login = stu.login_without_code(number, password)
+    login = stu.login_vpn(number, password)
 
     if not login:
         resp = make_response('请检查学号，密码是否正确')  # 自定义响应体

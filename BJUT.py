@@ -18,8 +18,6 @@ class Student:
         self.major = ''
         self.class_name = ''
 
-
-
     def login_vpn(self, number: str, password: str) -> bool:
         try:
             self.number = number
