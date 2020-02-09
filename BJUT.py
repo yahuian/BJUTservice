@@ -5,6 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from lxml import etree
 
+from logger import log
+
 VPN_BJUT_URL = 'https://vpn.bjut.edu.cn/prx/000/http/localhost/login'
 VPN_BJUT_GDJWGL_URL = 'https://vpn.bjut.edu.cn/prx/000/http/gdjwgl.bjut.edu.cn/'
 
@@ -20,88 +22,79 @@ class Student:
         self.major = ''
         self.class_name = ''
 
-    def login_vpn(self, number: str, password: str, vpn_pwd: str) -> bool:
-        try:
-            self.number = number
-            self.password = password
-            self.vpn_pwd = vpn_pwd
-
-            # post VPN_BJUT_URL
-            self.session = requests.Session()
-            data_vpn = {
-                'uname': self.number,
-                'pwd1': self.vpn_pwd
-            }
-            r_vpn = self.session.post(VPN_BJUT_URL, data=data_vpn)
-            r_vpn.raise_for_status()
-            print('welcome页面响应的url: ' + r_vpn.url)
-
-            url_without_code = VPN_BJUT_GDJWGL_URL + 'default_vsso.aspx'
-            data_vpn_gdjwgl = {
-                'TextBox1': self.number,
-                'TextBox2': self.password,
-                'RadioButtonList1_2': '%D1%A7%C9%FA',  # “学生”的gbk编码
-            }
-            r_vpn_gdjwgl = self.session.post(url_without_code, data_vpn_gdjwgl)
-            # 从主页获取学生的姓名
-            print('gdjwgl页面成功登录后的url: ' + r_vpn_gdjwgl.url)
-            content = r_vpn_gdjwgl.content.decode('gbk')
-            html = etree.HTML(content)
-            welcome_text = html.xpath('//*[@id="xhxm"]/text()')[0]
-            self.name = welcome_text[0:-2]
-            return True
-        except:
-            print('VPN登录失败')
-            return False
-
-    def login_without_code(self, number: str, password: str) -> bool:
-        """无验证码登录,原理是教务有个接口本身是不需要输入验证码的"""
+    def login(self, number: str, vpn_pwd: str, password: str):
         self.number = number
+        self.vpn_pwd = vpn_pwd
         self.password = password
 
-        self.session = requests.Session()  # 开启一次session
-        url = VPN_BJUT_GDJWGL_URL + 'default_vsso.aspx'  # 感谢野生工大助手项目：https://chafen.bjut123.com/
+        self.session = requests.Session()
+
+        # 登录vpn.bjut.edu.cn
+        data = {
+            'uname': self.number,
+            'pwd1': self.vpn_pwd
+        }
+        try:
+            resp = self.session.post(VPN_BJUT_URL, data=data)
+        except Exception as e:
+            log.error('post vpn fail: ' + str(e))
+            raise Exception('VPN连接失败，请稍后重试')
+
+        content = resp.content.decode(resp.encoding)
+        html = etree.HTML(content)
+        script = html.xpath('/html/head/script[1]/text()')[0]
+        welcome = '您好' + self.number
+        if welcome not in script:
+            log.error('vpn login fail: ' + self.number)
+            raise Exception('VPN登录失败，请检查学号和密码')
+
+        # 登录gdjwgl.bjut.edu.cn
+        url = VPN_BJUT_GDJWGL_URL + 'default_vsso.aspx'
         data = {
             'TextBox1': self.number,
             'TextBox2': self.password,
             'RadioButtonList1_2': '%D1%A7%C9%FA',  # “学生”的gbk编码
         }
-        response = self.session.post(url, data)
+        try:
+            resp = self.session.post(url=url, data=data)
+        except Exception as e:
+            log.error('post gdjwgl fail: ' + str(e))
+            raise Exception('教务访问失败，请稍后重试')
 
-        # 从主页获取学生的姓名
-        content = response.content.decode('gbk')  # 网页源码是gb2312要先解码
+        content = resp.content.decode('gbk')
         html = etree.HTML(content)
         try:
-            welcome_text = html.xpath('//*[@id="xhxm"]/text()')[0]
-            self.name = welcome_text[0:-2]
-            return True
-        except IndexError:  # 模拟登录失败
-            return False
+            welcome = html.xpath('//*[@id="xhxm"]/text()')[0]
+        except IndexError:
+            log.error('gdjwgd login fail: ' + self.number)
+            raise Exception('教务登录失败，请检查学号和密码')
+        self.name = welcome[0:-2]
 
-    def get_base_info(self) -> bool:
+    def get_base_info(self):
         """获取学生基本信息"""
-        name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
-        base_info_url = VPN_BJUT_GDJWGL_URL + 'xsgrxx.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121501'
+        # 学生名字的url编码
+        name_url = urllib.parse.quote(str(self.name.encode('gbk')))
+        url = VPN_BJUT_GDJWGL_URL + 'xsgrxx.aspx?xh=' + \
+            self.number + '&xm=' + name_url + '&gnmkdm=N121501'
         headers = {
             "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
         }
-        response = self.session.get(url=base_info_url, headers=headers)
-        html = response.content.decode("gbk")
-        soup = BeautifulSoup(html, "lxml")
         try:
+            response = self.session.get(url=url, headers=headers)
+            html = response.content.decode("gbk")
+            soup = BeautifulSoup(html, "lxml")
             self.college = soup.find(id='lbl_xy').get_text()  # 学院
             self.major = soup.find(id='lbl_zymc').get_text()  # 专业名称
             self.class_name = soup.find(id='lbl_xzb').get_text()  # 行政班
-        except AttributeError:  # 获取学生个人信息失败
-            return False
-        return True
+        except Exception as e:
+            log.error('get student base info fail: ' + str(e))
+            raise Exception('获取学生基本信息错误')
 
     def get_schedule(self, xn: str, xq: str) -> dict:
         """获取课程表信息"""
         # 教务这个接口好呀，都不用发post请求就可以拿到课表数据
-        schedule_url = VPN_BJUT_GDJWGL_URL + 'xskb.aspx?xh=' + self.number + '&xhxx=' + self.number + xn + xq
-        print('课表url')
-        print(schedule_url)
+        schedule_url = VPN_BJUT_GDJWGL_URL + 'xskb.aspx?xh=' + \
+            self.number + '&xhxx=' + self.number + xn + xq
         response = self.session.get(url=schedule_url)
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
@@ -119,10 +112,10 @@ class Student:
                         i = i + 1
                         if i % 4 == 0:
                             temp_dir = {
-                                'Name': res[4 * j],  # 课程名称
-                                'Time': re.sub('[{}]', '', res[4 * j + 1]),  # 上课时间
-                                'Teacher': res[4 * j + 2],  # 授课老师
-                                'Location': res[4 * j + 3][0:-29]  # 上课地点
+                                'Name': res[4 * j],
+                                'Time': re.sub('[{}]', '', res[4 * j + 1]),
+                                'Teacher': res[4 * j + 2],
+                                'Location': res[4 * j + 3][0:-29]
                             }
                             time_table.append(temp_dir)
                             j = j + 1
@@ -148,8 +141,9 @@ class Student:
 
     def get_examination(self) -> list:
         """查询考试信息"""
-        name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
-        exam_url = VPN_BJUT_GDJWGL_URL + 'xskscx.aspx?xh=' + self.number + '&xm' + name_url + '&gnmkdm=N121603'
+        name_url = urllib.parse.quote(str(self.name.encode('gbk')))
+        exam_url = VPN_BJUT_GDJWGL_URL + 'xskscx.aspx?xh=' + \
+            self.number + '&xm' + name_url + '&gnmkdm=N121603'
         headers = {
             "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
         }
@@ -175,8 +169,9 @@ class Student:
 
     def get_CET_exam(self) -> list:
         """CET考试信息"""
-        name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
-        grade_url = VPN_BJUT_GDJWGL_URL + 'xsdjkscx.aspx?xh=' + self.number + '&xm' + name_url + '&gnmkdm=N121603'
+        name_url = urllib.parse.quote(str(self.name.encode('gbk')))
+        grade_url = VPN_BJUT_GDJWGL_URL + 'xsdjkscx.aspx?xh=' + \
+            self.number + '&xm' + name_url + '&gnmkdm=N121603'
         headers = {
             "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
         }
@@ -204,8 +199,9 @@ class Student:
 
     def get_score(self, xn: str, xq: str) -> dict:
         """成绩查询"""
-        name_url = urllib.parse.quote(str(self.name.encode('gbk')))  # 学生名字的url编码
-        score_url = VPN_BJUT_GDJWGL_URL + 'xscj_gc.aspx?xh=' + self.number + '&xm=' + name_url + '&gnmkdm=N121605'
+        name_url = urllib.parse.quote(str(self.name.encode('gbk')))
+        score_url = VPN_BJUT_GDJWGL_URL + 'xscj_gc.aspx?xh=' + \
+            self.number + '&xm=' + name_url + '&gnmkdm=N121605'
         headers = {
             "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
         }
@@ -266,13 +262,6 @@ class Student:
             else:
                 data_term.append(temp_dir)
 
-        # print('辅修课程')
-        # print(data_minor)
-        # print('其余课程')
-        # print(data_other)
-        # print('本专业课程')
-        # print(data_term)
-
         # 本专业
         sum_g_mul_credit_term = 0.0  # ∑GPA*学分
         sum_score_mul_credit_term = 0.0  # ∑成绩*学分
@@ -302,7 +291,8 @@ class Student:
 
         for data in data_minor:
             sum_g_mul_credit_term_minor += data['g'] * data['credit']
-            sum_score_mul_credit_term_minor += float(data['score']) * data['credit']
+            sum_score_mul_credit_term_minor += float(
+                data['score']) * data['credit']
             sum_credit_term_minor += data['credit']
 
             # 去除多余字段
@@ -366,7 +356,8 @@ class Student:
                 # 首次就通过科目
                 if float(data['score']) >= 60 and data['rebuildTag'] == '0':
                     sum_g_mul_credit_all += data['g'] * data['credit']
-                    sum_score_mul_credit_all += float(data['score']) * data['credit']
+                    sum_score_mul_credit_all += float(
+                        data['score']) * data['credit']
                     sum_credit_all += data['credit']
                 else:
                     if data['makeupScore'] == '60':  # 补考后通过
@@ -411,10 +402,6 @@ class Student:
             sum_g_mul_credit_all += t['g'] * t['credit']
             sum_score_mul_credit_all += float(t['score']) * t['credit']
             sum_credit_all += t['credit']
-
-        # print(sum_g_mul_credit_all)
-        # print(sum_score_mul_credit_all)
-        # print(sum_credit_all)
 
         try:
             GPA_all = sum_g_mul_credit_all / sum_credit_all  # 总GPA
@@ -485,8 +472,10 @@ class Student:
             sum_credit_all_minor += t['credit']
 
         try:
-            GPA_all_minor = sum_g_mul_credit_all_minor / sum_credit_all_minor  # 总GPA(辅修专业)
-            SCORE_all_minor = sum_score_mul_credit_all_minor / sum_credit_all_minor  # 总加权(辅修专业)
+            GPA_all_minor = sum_g_mul_credit_all_minor / \
+                sum_credit_all_minor  # 总GPA(辅修专业)
+            SCORE_all_minor = sum_score_mul_credit_all_minor / \
+                sum_credit_all_minor  # 总加权(辅修专业)
         except ZeroDivisionError:
             GPA_all_minor = 0.0
             SCORE_all_minor = 0.0
@@ -510,4 +499,3 @@ class Student:
             'summery': summery
         }
         return result
-# TODO 将计算加权的逻辑放到客户端，减少服务器的压力
