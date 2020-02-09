@@ -1,6 +1,9 @@
+import logging
+
 from flask import Flask, jsonify, make_response, request
 
 from BJUT import Student
+from logger import log
 
 application = Flask(__name__)  # 实例化一个程序
 
