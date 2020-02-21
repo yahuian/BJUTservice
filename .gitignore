@@ -55,6 +55,7 @@ coverage.xml
 *.log
 local_settings.py
 db.sqlite3
+*.log.*
 
 # Flask stuff:
 instance/
@@ -111,3 +112,6 @@ venv.bak/
 
 # SQLite3文件数据库
 *.db
+
+# 测试文件
+test_vpn2.py

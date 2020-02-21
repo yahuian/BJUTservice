@@ -10,6 +10,11 @@ from logger import log
 VPN_BJUT_URL = 'https://vpn.bjut.edu.cn/prx/000/http/localhost/login'
 VPN_BJUT_GDJWGL_URL = 'https://vpn.bjut.edu.cn/prx/000/http/gdjwgl.bjut.edu.cn/'
 
+#全局变量
+header = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
+}
+
 
 class Student:
     def __init__(self):
@@ -35,7 +40,7 @@ class Student:
             'pwd1': self.vpn_pwd
         }
         try:
-            resp = self.session.post(VPN_BJUT_URL, data=data)
+            resp = self.session.post(VPN_BJUT_URL, data=data, headers=header)
         except Exception as e:
             log.error('post vpn fail: ' + str(e))
             raise Exception('VPN连接失败，请稍后重试')
@@ -56,7 +61,7 @@ class Student:
             'RadioButtonList1_2': '%D1%A7%C9%FA',  # “学生”的gbk编码
         }
         try:
-            resp = self.session.post(url=url, data=data)
+            resp = self.session.post(url=url, data=data, headers=header)
         except Exception as e:
             log.error('post gdjwgl fail: ' + str(e))
             raise Exception('教务访问失败，请稍后重试')
@@ -77,7 +82,8 @@ class Student:
         url = VPN_BJUT_GDJWGL_URL + 'xsgrxx.aspx?xh=' + \
             self.number + '&xm=' + name_url + '&gnmkdm=N121501'
         headers = {
-            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
         }
         try:
             response = self.session.get(url=url, headers=headers)
@@ -95,7 +101,7 @@ class Student:
         # 教务这个接口好呀，都不用发post请求就可以拿到课表数据
         schedule_url = VPN_BJUT_GDJWGL_URL + 'xskb.aspx?xh=' + \
             self.number + '&xhxx=' + self.number + xn + xq
-        response = self.session.get(url=schedule_url)
+        response = self.session.get(url=schedule_url, headers=header)
         html = response.content.decode("gbk")
         soup = BeautifulSoup(html, "lxml")
 
@@ -145,7 +151,8 @@ class Student:
         exam_url = VPN_BJUT_GDJWGL_URL + 'xskscx.aspx?xh=' + \
             self.number + '&xm' + name_url + '&gnmkdm=N121603'
         headers = {
-            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number,
+             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
         }
         response = self.session.get(url=exam_url, headers=headers)
         html = response.content.decode("gbk")
@@ -173,7 +180,8 @@ class Student:
         grade_url = VPN_BJUT_GDJWGL_URL + 'xsdjkscx.aspx?xh=' + \
             self.number + '&xm' + name_url + '&gnmkdm=N121603'
         headers = {
-            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number,
+             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
         }
         response = self.session.get(url=grade_url, headers=headers)
         html = response.content.decode("gbk")
@@ -203,7 +211,8 @@ class Student:
         score_url = VPN_BJUT_GDJWGL_URL + 'xscj_gc.aspx?xh=' + \
             self.number + '&xm=' + name_url + '&gnmkdm=N121605'
         headers = {
-            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number
+            "Referer": VPN_BJUT_GDJWGL_URL + 'xs_main.aspx?xh=' + self.number,
+             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
         }
         response = self.session.get(url=score_url, headers=headers)
 
