@@ -109,8 +109,5 @@ venv.bak/
 # PyCharm配置文件
 .idea
 
-# static存放验证码的目录
-/static
-
 # SQLite3文件数据库
 *.db
